@@ -1,5 +1,7 @@
-from random import random
+#Author: Alice Puppy
+#Version 1.0.1
 
+from random import random
 import discord, random
 from discord.ext import commands
 
@@ -17,6 +19,8 @@ with open(token_path, 'r') as file:
     token = file.read()
 
 parameter_arr = ["Responses", "Triggers", "Statements", "Parameters"]
+restricted_words = [" !program.args! ", " !exclusion.filter! "]
+trigger_filters = ["&!", "cs"]
 server_data_arr = []
 
 #Helper method, looks up array based on key for specific server
@@ -46,8 +50,9 @@ def lookup_arr(guild_id, arr_key):
     return return_arr
 
 async def trigger_message(trigger, message, guild_id):
-    response_index = trigger.split("[")[1].split("]")[0].split(",")[0]
-    response_probability = trigger.split("[")[1].split("]")[0].split(",")[1]
+    parts = trigger.split(restricted_words[0])[0].split(",")
+    response_index = parts[0]
+    response_probability = parts[1]
     lottery = random.randint(1, int(response_probability))
     if int(lottery) == int(response_probability):
         response = lookup_arr(guild_id, "Responses")
@@ -83,24 +88,24 @@ async def on_message(message):
     #search messages for triggers
     for trigger in triggers:
         #Set search string if case-sensitive or not
-        if "cs" in trigger.split("]")[0]:
+        if trigger_filters[1] in trigger.split(restricted_words[0])[0]:
             search_str = message.content
         else:
             search_str = message.content.lower()
 
         #If the trigger phrase is in the message, trigger a response based on trigger parameters
-        parts = trigger.split("]")
-        if "|||||" in parts[1]:
-            search_trigger = str(parts[1].split("|||||")[0]).strip()
+        parts = trigger.split(restricted_words[0])
+        if restricted_words[1] in parts[1]:
+            search_trigger = str(parts[1].split(restricted_words[1])[0]).strip()
         else:
             search_trigger = str(parts[1]).strip()
 
         if search_trigger in search_str:
             # Search for `and not tag`
-            if "&!" in parts[0]:
+            if trigger_filters[0] in parts[0]:
                 correct = False
-                additional_params = parts[1].split("|||||")
-                for x in range(1, parts[0].count("&!")+1):
+                additional_params = parts[1].split(restricted_words[1])
+                for x in range(1, parts[0].count(trigger_filters[0])+1):
                     if str(additional_params[x]).strip() in str(search_str):
                         correct = True
                         break
